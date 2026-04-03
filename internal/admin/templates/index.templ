@@ -42,6 +42,19 @@ templ Index(webhooks []db.Webhook) {
 						class="w-full bg-stone-800 border border-stone-600 rounded px-3 py-2 text-stone-50 focus:outline-none focus:border-stone-400"
 					/>
 				</div>
+				<div>
+					<label class="block text-sm text-stone-400 mb-1">HTTP Method</label>
+					<select
+						name="http_method"
+						required
+						class="w-full bg-stone-800 border border-stone-600 rounded px-3 py-2 text-stone-50 focus:outline-none focus:border-stone-400"
+					>
+						<option value="GET">GET</option>
+						<option value="POST" selected>POST</option>
+						<option value="PUT">PUT</option>
+						<option value="DELETE">DELETE</option>
+					</select>
+				</div>
 				<button
 					type="submit"
 					class="bg-stone-700 hover:bg-stone-600 px-4 py-2 rounded text-sm"
@@ -68,6 +81,7 @@ templ WebhookList(webhooks []db.Webhook) {
 				<tr class="text-left text-stone-400 border-b border-stone-700">
 					<th class="py-2 pr-4">ID</th>
 					<th class="py-2 pr-4">Path</th>
+					<th class="py-2 pr-4">Method</th>
 					<th class="py-2 pr-4">Script</th>
 					<th class="py-2 pr-4">Active</th>
 					<th class="py-2">Actions</th>
@@ -86,6 +100,7 @@ templ WebhookRow(w db.Webhook) {
 	<tr class="border-b border-stone-800" id={ fmt.Sprintf("webhook-row-%d", w.ID) }>
 		<td class="py-2 pr-4">{ fmt.Sprintf("%d", w.ID) }</td>
 		<td class="py-2 pr-4 font-mono">{ w.Path }</td>
+		<td class="py-2 pr-4">{ w.HttpMethod }</td>
 		<td class="py-2 pr-4 font-mono text-stone-400">{ w.ScriptPath }</td>
 		<td class="py-2 pr-4">
 			if w.Active {
@@ -128,6 +143,19 @@ templ WebhookEditRow(w db.Webhook) {
 				required
 				class="w-full bg-stone-800 border border-stone-600 rounded px-2 py-1 text-stone-50 font-mono text-sm focus:outline-none focus:border-stone-400"
 			/>
+		</td>
+		<td class="py-2 pr-4">
+			<select
+				name="http_method"
+				form={ fmt.Sprintf("edit-form-%d", w.ID) }
+				required
+				class="w-full bg-stone-800 border border-stone-600 rounded px-2 py-1 text-stone-50 text-sm focus:outline-none focus:border-stone-400"
+			>
+				<option value="GET" selected?={ w.HttpMethod == "GET" }>GET</option>
+				<option value="POST" selected?={ w.HttpMethod == "POST" }>POST</option>
+				<option value="PUT" selected?={ w.HttpMethod == "PUT" }>PUT</option>
+				<option value="DELETE" selected?={ w.HttpMethod == "DELETE" }>DELETE</option>
+			</select>
 		</td>
 		<td class="py-2 pr-4">
 			<input

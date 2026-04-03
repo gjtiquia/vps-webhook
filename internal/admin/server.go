@@ -55,6 +55,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleCreateWebhook(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimSpace(r.FormValue("path"))
 	scriptPath := strings.TrimSpace(r.FormValue("script_path"))
+	httpMethod := strings.TrimSpace(r.FormValue("http_method"))
 
 	if path == "" || scriptPath == "" {
 		http.Error(w, "path and script_path are required", http.StatusBadRequest)
@@ -65,7 +66,11 @@ func (s *Server) handleCreateWebhook(w http.ResponseWriter, r *http.Request) {
 		path = "/" + path
 	}
 
-	if _, err := s.db.CreateWebhook(path, scriptPath); err != nil {
+	if httpMethod == "" {
+		httpMethod = "POST"
+	}
+
+	if _, err := s.db.CreateWebhook(path, scriptPath, httpMethod); err != nil {
 		log.Printf("error creating webhook: %v", err)
 		http.Error(w, fmt.Sprintf("error: %v", err), http.StatusBadRequest)
 		return
@@ -136,6 +141,7 @@ func (s *Server) handleUpdateWebhook(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimSpace(r.FormValue("path"))
 	scriptPath := strings.TrimSpace(r.FormValue("script_path"))
 	activeStr := r.FormValue("active")
+	httpMethod := strings.TrimSpace(r.FormValue("http_method"))
 
 	if path == "" || scriptPath == "" {
 		http.Error(w, "path and script_path are required", http.StatusBadRequest)
@@ -148,7 +154,11 @@ func (s *Server) handleUpdateWebhook(w http.ResponseWriter, r *http.Request) {
 
 	active := activeStr == "on" || activeStr == "true" || activeStr == "1"
 
-	if err := s.db.UpdateWebhook(id, path, scriptPath, active); err != nil {
+	if httpMethod == "" {
+		httpMethod = "POST"
+	}
+
+	if err := s.db.UpdateWebhook(id, path, scriptPath, active, httpMethod); err != nil {
 		log.Printf("error updating webhook: %v", err)
 		http.Error(w, fmt.Sprintf("error: %v", err), http.StatusBadRequest)
 		return

@@ -1,6 +1,7 @@
 package webhook
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"vps-webhook/internal/db"
@@ -17,6 +19,7 @@ import (
 type Server struct {
 	db      *db.DB
 	logsDir string
+	token   string
 }
 
 type RequestLog struct {
@@ -32,11 +35,11 @@ type RequestLog struct {
 	WebhookPath string              `json:"webhook_path"`
 }
 
-func NewServer(database *db.DB, logsDir string) *Server {
+func NewServer(database *db.DB, logsDir string, token string) *Server {
 	if err := os.MkdirAll(logsDir, 0755); err != nil {
 		log.Fatalf("failed to create logs directory: %v", err)
 	}
-	return &Server{db: database, logsDir: logsDir}
+	return &Server{db: database, logsDir: logsDir, token: token}
 }
 
 func (s *Server) Handler() http.Handler {
@@ -44,6 +47,19 @@ func (s *Server) Handler() http.Handler {
 }
 
 func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
+	// 1. Check Bearer token authentication
+	authHeader := r.Header.Get("Authorization")
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	providedToken := strings.TrimPrefix(authHeader, "Bearer ")
+	if subtle.ConstantTimeCompare([]byte(providedToken), []byte(s.token)) != 1 {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// 2. Lookup webhook in DB
 	webhook, err := s.db.GetWebhookByPath(r.URL.Path)
 	if err != nil {
 		log.Printf("error looking up webhook for path %s: %v", r.URL.Path, err)
@@ -55,6 +71,15 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+
+	// 3. Check HTTP method
+	if r.Method != webhook.HttpMethod {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// 4. Limit body size to 1MB
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
