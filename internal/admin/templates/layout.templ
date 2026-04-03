@@ -1,0 +1,31 @@
+package templates
+
+templ Layout(title string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title }</title>
+			<script src="https://unpkg.com/htmx.org@2.0.4"></script>
+			<script src="https://cdn.tailwindcss.com"></script>
+			<script>
+				tailwind.config = {
+					theme: {
+						extend: {},
+					},
+				}
+			</script>
+		</head>
+		<body class="bg-stone-900 text-stone-50 min-h-screen">
+			<div class="max-w-4xl mx-auto p-6">
+				<header class="mb-8">
+					<a href="/" class="hover:underline">
+						<span class="font-bold"># vps-webhook</span>
+					</a>
+				</header>
+				{ children... }
+			</div>
+		</body>
+	</html>
+}

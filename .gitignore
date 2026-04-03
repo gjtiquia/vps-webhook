@@ -1,0 +1,8 @@
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+logs/
+*.exe
+*.out
+tmp/
+node_modules/
