@@ -1,7 +1,9 @@
 package admin
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -9,18 +11,26 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"vps-webhook/internal/admin/templates"
 	"vps-webhook/internal/db"
 )
 
 type Server struct {
-	db      *db.DB
-	logsDir string
+	db           *db.DB
+	logsDir      string
+	webhookToken string
+	httpClient   *http.Client
 }
 
-func NewServer(database *db.DB, logsDir string) *Server {
-	return &Server{db: database, logsDir: logsDir}
+func NewServer(database *db.DB, logsDir string, webhookToken string) *Server {
+	return &Server{
+		db:           database,
+		logsDir:      logsDir,
+		webhookToken: webhookToken,
+		httpClient:   &http.Client{Timeout: 10 * time.Second},
+	}
 }
 
 func (s *Server) Handler() http.Handler {
@@ -31,6 +41,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /webhooks/{id}", s.handleGetWebhookRow)
 	mux.HandleFunc("PUT /webhooks/{id}", s.handleUpdateWebhook)
 	mux.HandleFunc("DELETE /webhooks/{id}", s.handleDeleteWebhook)
+	mux.HandleFunc("POST /webhooks/test", s.handleTestWebhook)
 	mux.HandleFunc("GET /logs", s.handleListLogs)
 	mux.HandleFunc("GET /logs/{file}", s.handleViewLog)
 	return mux
@@ -196,6 +207,77 @@ func (s *Server) handleDeleteWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	templates.WebhookList(webhooks).Render(r.Context(), w)
+}
+
+func (s *Server) handleTestWebhook(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimSpace(r.FormValue("webhook_id"))
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || id <= 0 {
+		http.Error(w, "invalid webhook_id", http.StatusBadRequest)
+		return
+	}
+
+	webhook, err := s.db.GetWebhook(id)
+	if err != nil {
+		log.Printf("error getting webhook: %v", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if webhook == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	webhookURL := strings.TrimSpace(r.FormValue("webhook_url"))
+	if webhookURL == "" {
+		http.Error(w, "webhook_url is required", http.StatusBadRequest)
+		return
+	}
+
+	// Ensure the URL doesn't have a trailing slash
+	webhookURL = strings.TrimSuffix(webhookURL, "/")
+
+	// Build the target URL
+	targetURL := webhookURL + webhook.Path
+
+	body := r.FormValue("body")
+
+	// Create the request
+	var bodyReader io.Reader
+	if body != "" {
+		bodyReader = bytes.NewReader([]byte(body))
+	}
+
+	req, err := http.NewRequest(webhook.HttpMethod, targetURL, bodyReader)
+	if err != nil {
+		log.Printf("error creating request: %v", err)
+		http.Error(w, "error creating request", http.StatusInternalServerError)
+		return
+	}
+
+	// Add Authorization header
+	req.Header.Set("Authorization", "Bearer "+s.webhookToken)
+	if body != "" {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	// Execute the request
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		log.Printf("error executing webhook request: %v", err)
+		templates.TestResult(0, "", "Error: "+err.Error()).Render(r.Context(), w)
+		return
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("error reading response body: %v", err)
+		templates.TestResult(resp.StatusCode, "", "Error reading response: "+err.Error()).Render(r.Context(), w)
+		return
+	}
+
+	templates.TestResult(resp.StatusCode, string(respBody), "").Render(r.Context(), w)
 }
 
 func (s *Server) handleListLogs(w http.ResponseWriter, r *http.Request) {

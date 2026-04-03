@@ -63,6 +63,7 @@ templ Index(webhooks []db.Webhook) {
 				</button>
 			</form>
 		</div>
+		@TestWebhookSection(webhooks)
 		<div class="mt-8 border border-stone-700 p-4 rounded">
 			<span class="font-bold">## Recent Logs</span>
 			<div id="log-list" class="mt-4" hx-get="/logs" hx-trigger="load" hx-swap="innerHTML">
@@ -198,6 +199,92 @@ templ WebhookEditRow(w db.Webhook) {
 			</button>
 		</td>
 	</tr>
+}
+
+templ TestWebhookSection(webhooks []db.Webhook) {
+	<div class="mt-8 border border-stone-700 p-4 rounded">
+		<span class="font-bold">## Test Webhook</span>
+		if len(webhooks) == 0 {
+			<p class="text-stone-400 text-sm mt-4">No webhooks configured. Add a webhook first to test it.</p>
+		} else {
+            <form
+                id="test-webhook-form"
+                class="mt-4 space-y-3"
+                hx-post="/webhooks/test"
+                hx-target="#test-result"
+                hx-swap="innerHTML"
+            >
+				<div>
+					<label class="block text-sm text-stone-400 mb-1">Webhook Server URL</label>
+					<input
+						type="url"
+						name="webhook_url"
+						required
+						placeholder="http://localhost:9000"
+						class="w-full bg-stone-800 border border-stone-600 rounded px-3 py-2 text-stone-50 focus:outline-none focus:border-stone-400"
+					/>
+				</div>
+				<div>
+					<label class="block text-sm text-stone-400 mb-1">Select Webhook</label>
+                    <select
+                        id="test-webhook-select"
+                        name="webhook_id"
+                        required
+                        class="w-full bg-stone-800 border border-stone-600 rounded px-3 py-2 text-stone-50 focus:outline-none focus:border-stone-400"
+                    >
+                        <option value="">-- Select a webhook --</option>
+                        for _, w := range webhooks {
+                            <option value={ fmt.Sprintf("%d", w.ID) }>{ w.HttpMethod } { w.Path }</option>
+                        }
+                    </select>
+				</div>
+				<div>
+					<label class="block text-sm text-stone-400 mb-1">Request Body (optional)</label>
+					<textarea
+						name="body"
+						rows="4"
+						placeholder='{"key": "value"}'
+						class="w-full bg-stone-800 border border-stone-600 rounded px-3 py-2 text-stone-50 font-mono text-sm focus:outline-none focus:border-stone-400"
+					></textarea>
+				</div>
+				<button
+					type="submit"
+					class="bg-stone-700 hover:bg-stone-600 px-4 py-2 rounded text-sm"
+				>
+					Test
+				</button>
+			</form>
+			<div id="test-result" class="mt-4"></div>
+		}
+	</div>
+}
+
+templ TestResult(statusCode int, body string, errorMsg string) {
+	if errorMsg != "" {
+		<div class="border border-red-700 bg-red-900/20 p-3 rounded">
+			<p class="text-red-400 font-semibold">Error</p>
+			<p class="text-red-300 text-sm mt-1">{ errorMsg }</p>
+		</div>
+	} else {
+		<div class="border border-stone-700 p-3 rounded">
+			<div class="flex items-center gap-2 mb-2">
+				<span class="text-stone-400 text-sm">Status:</span>
+				<span
+					class={ "font-mono font-semibold",
+						templ.KV("text-green-400", statusCode >= 200 && statusCode < 300),
+						templ.KV("text-red-400", statusCode < 200 || statusCode >= 300) }
+				>
+					{ fmt.Sprintf("%d", statusCode) }
+				</span>
+			</div>
+			if body != "" {
+				<div>
+					<span class="text-stone-400 text-sm">Response:</span>
+					<pre class="mt-1 bg-stone-900 border border-stone-800 p-2 rounded text-stone-300 text-sm overflow-x-auto">{ body }</pre>
+				</div>
+			}
+		</div>
+	}
 }
 
 templ LogList(files []string) {

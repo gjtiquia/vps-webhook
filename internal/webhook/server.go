@@ -22,6 +22,21 @@ type Server struct {
 	token   string
 }
 
+// responseWriter wraps http.ResponseWriter to capture status code
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func newResponseWriter(w http.ResponseWriter) *responseWriter {
+	return &responseWriter{w, http.StatusOK}
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
 type RequestLog struct {
 	Timestamp   string              `json:"timestamp"`
 	Method      string              `json:"method"`
@@ -43,7 +58,25 @@ func NewServer(database *db.DB, logsDir string, token string) *Server {
 }
 
 func (s *Server) Handler() http.Handler {
-	return http.HandlerFunc(s.handleWebhook)
+	return s.loggingMiddleware(http.HandlerFunc(s.handleWebhook))
+}
+
+func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		rw := newResponseWriter(w)
+
+		next.ServeHTTP(rw, r)
+
+		duration := time.Since(start)
+		log.Printf("%s %s - %d (%v) from %s",
+			r.Method,
+			r.URL.Path,
+			rw.statusCode,
+			duration,
+			r.RemoteAddr,
+		)
+	})
 }
 
 func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
