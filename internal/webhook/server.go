@@ -153,6 +153,7 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("webhook matched: path=%s script=%s log=%s", webhook.Path, webhook.ScriptPath, logPath)
+	log.Printf("running script %s with log %s in goroutine", webhook.ScriptPath, logPath)
 
 	absLogPath, _ := filepath.Abs(logPath)
 	absScriptPath, _ := filepath.Abs(webhook.ScriptPath)
