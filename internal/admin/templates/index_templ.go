@@ -62,7 +62,7 @@ func Index(webhooks []db.Webhook) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, " <div class=\"mt-8 border border-stone-700 p-4 rounded\"><span class=\"font-bold\">## Recent Logs</span><div id=\"log-list\" class=\"mt-4\" hx-get=\"/logs\" hx-trigger=\"load\" hx-swap=\"innerHTML\"><p class=\"text-stone-400 text-sm\">Loading...</p></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, " <div class=\"mt-8 border border-stone-700 p-4 rounded\"><span class=\"font-bold\">## Recent Logs</span><div id=\"log-list\" class=\"mt-4\" hx-get=\"/logs\" hx-trigger=\"load, refresh\" hx-swap=\"innerHTML\"><p class=\"text-stone-400 text-sm\">Loading...</p></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -536,7 +536,7 @@ func TestWebhookSection(webhooks []db.Webhook) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "<form id=\"test-webhook-form\" class=\"mt-4 space-y-3\" hx-post=\"/webhooks/test\" hx-target=\"#test-result\" hx-swap=\"innerHTML\"><div><label class=\"block text-sm text-stone-400 mb-1\">Webhook Server URL</label> <input type=\"url\" name=\"webhook_url\" required placeholder=\"http://localhost:9000\" class=\"w-full bg-stone-800 border border-stone-600 rounded px-3 py-2 text-stone-50 focus:outline-none focus:border-stone-400\"></div><div><label class=\"block text-sm text-stone-400 mb-1\">Select Webhook</label> <select id=\"test-webhook-select\" name=\"webhook_id\" required class=\"w-full bg-stone-800 border border-stone-600 rounded px-3 py-2 text-stone-50 focus:outline-none focus:border-stone-400\"><option value=\"\">-- Select a webhook --</option> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "<form id=\"test-webhook-form\" class=\"mt-4 space-y-3\" hx-post=\"/webhooks/test\" hx-target=\"#test-result\" hx-swap=\"innerHTML\" hx-on::before-request=\"document.getElementById('test-result').innerHTML = '<p class=\\'text-stone-400 text-sm\\'>Testing...</p>'\" hx-on::after-request=\"htmx.trigger('#log-list', 'refresh')\"><div><label class=\"block text-sm text-stone-400 mb-1\">Webhook Server URL</label> <input type=\"url\" name=\"webhook_url\" required placeholder=\"http://localhost:9000\" class=\"w-full bg-stone-800 border border-stone-600 rounded px-3 py-2 text-stone-50 focus:outline-none focus:border-stone-400\"></div><div><label class=\"block text-sm text-stone-400 mb-1\">Select Webhook</label> <select id=\"test-webhook-select\" name=\"webhook_id\" required class=\"w-full bg-stone-800 border border-stone-600 rounded px-3 py-2 text-stone-50 focus:outline-none focus:border-stone-400\"><option value=\"\">-- Select a webhook --</option> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -548,7 +548,7 @@ func TestWebhookSection(webhooks []db.Webhook) templ.Component {
 				var templ_7745c5c3_Var27 string
 				templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", w.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/admin/templates/index.templ`, Line: 237, Col: 67}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/admin/templates/index.templ`, Line: 239, Col: 67}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 				if templ_7745c5c3_Err != nil {
@@ -561,7 +561,7 @@ func TestWebhookSection(webhooks []db.Webhook) templ.Component {
 				var templ_7745c5c3_Var28 string
 				templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(w.HttpMethod)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/admin/templates/index.templ`, Line: 237, Col: 84}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/admin/templates/index.templ`, Line: 239, Col: 84}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 				if templ_7745c5c3_Err != nil {
@@ -574,7 +574,7 @@ func TestWebhookSection(webhooks []db.Webhook) templ.Component {
 				var templ_7745c5c3_Var29 string
 				templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(w.Path)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/admin/templates/index.templ`, Line: 237, Col: 95}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/admin/templates/index.templ`, Line: 239, Col: 95}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 				if templ_7745c5c3_Err != nil {
@@ -627,7 +627,7 @@ func TestResult(statusCode int, body string, errorMsg string) templ.Component {
 			var templ_7745c5c3_Var31 string
 			templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(errorMsg)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/admin/templates/index.templ`, Line: 266, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/admin/templates/index.templ`, Line: 268, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 			if templ_7745c5c3_Err != nil {
@@ -669,7 +669,7 @@ func TestResult(statusCode int, body string, errorMsg string) templ.Component {
 			var templ_7745c5c3_Var34 string
 			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", statusCode))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/admin/templates/index.templ`, Line: 277, Col: 36}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/admin/templates/index.templ`, Line: 279, Col: 36}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 			if templ_7745c5c3_Err != nil {
@@ -687,7 +687,7 @@ func TestResult(statusCode int, body string, errorMsg string) templ.Component {
 				var templ_7745c5c3_Var35 string
 				templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(body)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/admin/templates/index.templ`, Line: 283, Col: 117}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/admin/templates/index.templ`, Line: 285, Col: 117}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 				if templ_7745c5c3_Err != nil {
@@ -746,7 +746,7 @@ func LogList(files []string) templ.Component {
 				var templ_7745c5c3_Var37 templ.SafeURL
 				templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/logs/" + f))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/admin/templates/index.templ`, Line: 297, Col: 42}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/admin/templates/index.templ`, Line: 299, Col: 42}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 				if templ_7745c5c3_Err != nil {
@@ -759,7 +759,7 @@ func LogList(files []string) templ.Component {
 				var templ_7745c5c3_Var38 string
 				templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(f)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/admin/templates/index.templ`, Line: 297, Col: 107}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/admin/templates/index.templ`, Line: 299, Col: 107}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 				if templ_7745c5c3_Err != nil {

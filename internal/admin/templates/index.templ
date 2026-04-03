@@ -66,7 +66,7 @@ templ Index(webhooks []db.Webhook) {
 		@TestWebhookSection(webhooks)
 		<div class="mt-8 border border-stone-700 p-4 rounded">
 			<span class="font-bold">## Recent Logs</span>
-			<div id="log-list" class="mt-4" hx-get="/logs" hx-trigger="load" hx-swap="innerHTML">
+			<div id="log-list" class="mt-4" hx-get="/logs" hx-trigger="load, refresh" hx-swap="innerHTML">
 				<p class="text-stone-400 text-sm">Loading...</p>
 			</div>
 		</div>
@@ -213,6 +213,8 @@ templ TestWebhookSection(webhooks []db.Webhook) {
                 hx-post="/webhooks/test"
                 hx-target="#test-result"
                 hx-swap="innerHTML"
+                hx-on::before-request="document.getElementById('test-result').innerHTML = '<p class=\'text-stone-400 text-sm\'>Testing...</p>'"
+                hx-on::after-request="htmx.trigger('#log-list', 'refresh')"
             >
 				<div>
 					<label class="block text-sm text-stone-400 mb-1">Webhook Server URL</label>
