@@ -39,7 +39,7 @@ sequenceDiagram
 
 ### 1. Update admin server to accept webhook token
 
-- In [cmd/admin/main.go](cmd/admin/main.go), read `WEBHOOK_TOKEN` from `os.Getenv` (not fatal if empty — testing simply won't work without it)
+- In [cmd/admin/main.go](cmd/admin/main.go), read `WEBHOOK_TOKEN` from `os.Getenv` (should be fatal if empty, make sure it loads .env just like the webhook server)
 - Pass it to `admin.NewServer(database, logsDir, webhookToken)`
 
 ### 2. Add the test handler in the admin server
