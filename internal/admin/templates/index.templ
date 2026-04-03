@@ -73,35 +73,103 @@ templ WebhookList(webhooks []db.Webhook) {
 					<th class="py-2">Actions</th>
 				</tr>
 			</thead>
-			<tbody>
-				for _, w := range webhooks {
-					<tr class="border-b border-stone-800">
-						<td class="py-2 pr-4">{ fmt.Sprintf("%d", w.ID) }</td>
-						<td class="py-2 pr-4 font-mono">{ w.Path }</td>
-						<td class="py-2 pr-4 font-mono text-stone-400">{ w.ScriptPath }</td>
-						<td class="py-2 pr-4">
-							if w.Active {
-								<span class="text-green-400">yes</span>
-							} else {
-								<span class="text-red-400">no</span>
-							}
-						</td>
-						<td class="py-2">
-							<button
-								hx-delete={ fmt.Sprintf("/webhooks/%d", w.ID) }
-								hx-target="#webhook-list"
-								hx-swap="innerHTML"
-								hx-confirm="Delete this webhook?"
-								class="text-red-400 hover:text-red-300 text-sm"
-							>
-								delete
-							</button>
-						</td>
-					</tr>
-				}
-			</tbody>
+		<tbody id="webhook-table-body">
+			for _, w := range webhooks {
+				@WebhookRow(w)
+			}
+		</tbody>
 		</table>
 	}
+}
+
+templ WebhookRow(w db.Webhook) {
+	<tr class="border-b border-stone-800" id={ fmt.Sprintf("webhook-row-%d", w.ID) }>
+		<td class="py-2 pr-4">{ fmt.Sprintf("%d", w.ID) }</td>
+		<td class="py-2 pr-4 font-mono">{ w.Path }</td>
+		<td class="py-2 pr-4 font-mono text-stone-400">{ w.ScriptPath }</td>
+		<td class="py-2 pr-4">
+			if w.Active {
+				<span class="text-green-400">yes</span>
+			} else {
+				<span class="text-red-400">no</span>
+			}
+		</td>
+		<td class="py-2 space-x-2">
+			<button
+				hx-get={ fmt.Sprintf("/webhooks/%d/edit", w.ID) }
+				hx-target={ fmt.Sprintf("#webhook-row-%d", w.ID) }
+				hx-swap="outerHTML"
+				class="text-stone-400 hover:text-stone-200 text-sm"
+			>
+				edit
+			</button>
+			<button
+				hx-delete={ fmt.Sprintf("/webhooks/%d", w.ID) }
+				hx-target="#webhook-list"
+				hx-swap="innerHTML"
+				hx-confirm="Delete this webhook?"
+				class="text-red-400 hover:text-red-300 text-sm"
+			>
+				delete
+			</button>
+		</td>
+	</tr>
+}
+
+templ WebhookEditRow(w db.Webhook) {
+	<tr class="border-b border-stone-800" id={ fmt.Sprintf("webhook-row-%d", w.ID) }>
+		<td class="py-2 pr-4">{ fmt.Sprintf("%d", w.ID) }</td>
+		<td class="py-2 pr-4">
+			<input
+				type="text"
+				name="path"
+				value={ w.Path }
+				form={ fmt.Sprintf("edit-form-%d", w.ID) }
+				required
+				class="w-full bg-stone-800 border border-stone-600 rounded px-2 py-1 text-stone-50 font-mono text-sm focus:outline-none focus:border-stone-400"
+			/>
+		</td>
+		<td class="py-2 pr-4">
+			<input
+				type="text"
+				name="script_path"
+				value={ w.ScriptPath }
+				form={ fmt.Sprintf("edit-form-%d", w.ID) }
+				required
+				class="w-full bg-stone-800 border border-stone-600 rounded px-2 py-1 text-stone-50 font-mono text-sm focus:outline-none focus:border-stone-400"
+			/>
+		</td>
+		<td class="py-2 pr-4">
+			<input
+				type="checkbox"
+				name="active"
+				form={ fmt.Sprintf("edit-form-%d", w.ID) }
+				checked?={ w.Active }
+				class="accent-green-400"
+			/>
+		</td>
+		<td class="py-2 space-x-2">
+			<form
+				id={ fmt.Sprintf("edit-form-%d", w.ID) }
+				hx-put={ fmt.Sprintf("/webhooks/%d", w.ID) }
+				hx-target="#webhook-list"
+				hx-swap="innerHTML"
+				class="inline"
+			>
+				<button type="submit" class="text-green-400 hover:text-green-300 text-sm">
+					save
+				</button>
+			</form>
+			<button
+				hx-get={ fmt.Sprintf("/webhooks/%d", w.ID) }
+				hx-target={ fmt.Sprintf("#webhook-row-%d", w.ID) }
+				hx-swap="outerHTML"
+				class="text-stone-400 hover:text-stone-200 text-sm"
+			>
+				cancel
+			</button>
+		</td>
+	</tr>
 }
 
 templ LogList(files []string) {
