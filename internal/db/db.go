@@ -1,16 +1,21 @@
+//go:generate sqlc generate -f ../../sqlc.yaml
+
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
+	"vps-webhook/internal/db/sqlc"
 )
 
 type DB struct {
-	conn *sql.DB
+	conn   *sql.DB
+	queries *sqlc.Queries
 }
 
 type Webhook struct {
@@ -36,7 +41,10 @@ func Open(dbPath string) (*DB, error) {
 		return nil, fmt.Errorf("pinging database: %w", err)
 	}
 
-	d := &DB{conn: conn}
+	d := &DB{
+		conn:    conn,
+		queries: sqlc.New(conn),
+	}
 	if err := d.migrate(); err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)
 	}
@@ -84,78 +92,94 @@ func (d *DB) CreateWebhook(path, scriptPath, httpMethod string) (*Webhook, error
 	if httpMethod == "" {
 		httpMethod = "POST"
 	}
-	result, err := d.conn.Exec(
-		"INSERT INTO webhooks (path, script_path, http_method) VALUES (?, ?, ?)",
-		path, scriptPath, httpMethod,
-	)
+	ctx := context.Background()
+	result, err := d.queries.CreateWebhook(ctx, sqlc.CreateWebhookParams{
+		Path:       path,
+		ScriptPath: scriptPath,
+		HttpMethod: httpMethod,
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	id, _ := result.LastInsertId()
-	return &Webhook{ID: id, Path: path, ScriptPath: scriptPath, Active: true, HttpMethod: httpMethod}, nil
+	return &Webhook{
+		ID:         result.ID,
+		Path:       result.Path,
+		ScriptPath: result.ScriptPath,
+		Active:     result.Active,
+		HttpMethod: result.HttpMethod,
+	}, nil
 }
 
 func (d *DB) ListWebhooks() ([]Webhook, error) {
-	rows, err := d.conn.Query("SELECT id, path, script_path, active, http_method FROM webhooks ORDER BY id")
+	ctx := context.Background()
+	results, err := d.queries.ListWebhooks(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var webhooks []Webhook
-	for rows.Next() {
-		var w Webhook
-		if err := rows.Scan(&w.ID, &w.Path, &w.ScriptPath, &w.Active, &w.HttpMethod); err != nil {
-			return nil, err
+	webhooks := make([]Webhook, len(results))
+	for i, r := range results {
+		webhooks[i] = Webhook{
+			ID:         r.ID,
+			Path:       r.Path,
+			ScriptPath: r.ScriptPath,
+			Active:     r.Active,
+			HttpMethod: r.HttpMethod,
 		}
-		webhooks = append(webhooks, w)
 	}
-	return webhooks, rows.Err()
+	return webhooks, nil
 }
 
 func (d *DB) GetWebhookByPath(path string) (*Webhook, error) {
-	var w Webhook
-	err := d.conn.QueryRow(
-		"SELECT id, path, script_path, active, http_method FROM webhooks WHERE path = ? AND active = 1",
-		path,
-	).Scan(&w.ID, &w.Path, &w.ScriptPath, &w.Active, &w.HttpMethod)
+	ctx := context.Background()
+	result, err := d.queries.GetWebhookByPath(ctx, path)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &w, nil
+	return &Webhook{
+		ID:         result.ID,
+		Path:       result.Path,
+		ScriptPath: result.ScriptPath,
+		Active:     result.Active,
+		HttpMethod: result.HttpMethod,
+	}, nil
 }
 
 func (d *DB) GetWebhook(id int64) (*Webhook, error) {
-	var w Webhook
-	err := d.conn.QueryRow(
-		"SELECT id, path, script_path, active, http_method FROM webhooks WHERE id = ?",
-		id,
-	).Scan(&w.ID, &w.Path, &w.ScriptPath, &w.Active, &w.HttpMethod)
+	ctx := context.Background()
+	result, err := d.queries.GetWebhook(ctx, id)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &w, nil
+	return &Webhook{
+		ID:         result.ID,
+		Path:       result.Path,
+		ScriptPath: result.ScriptPath,
+		Active:     result.Active,
+		HttpMethod: result.HttpMethod,
+	}, nil
 }
 
 func (d *DB) UpdateWebhook(id int64, path, scriptPath string, active bool, httpMethod string) error {
 	if httpMethod == "" {
 		httpMethod = "POST"
 	}
-	_, err := d.conn.Exec(
-		"UPDATE webhooks SET path = ?, script_path = ?, active = ?, http_method = ? WHERE id = ?",
-		path, scriptPath, active, httpMethod, id,
-	)
-	return err
+	ctx := context.Background()
+	return d.queries.UpdateWebhook(ctx, sqlc.UpdateWebhookParams{
+		Path:       path,
+		ScriptPath: scriptPath,
+		Active:     active,
+		HttpMethod: httpMethod,
+		ID:         id,
+	})
 }
 
 func (d *DB) DeleteWebhook(id int64) error {
-	_, err := d.conn.Exec("DELETE FROM webhooks WHERE id = ?", id)
-	return err
+	ctx := context.Background()
+	return d.queries.DeleteWebhook(ctx, id)
 }

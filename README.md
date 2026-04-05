@@ -9,6 +9,9 @@ use cases
 ## quick start
 
 ```bash
+# generate sqlc code (run after modifying db/query/*.sql files)
+sqlc generate
+
 # generate templ files
 templ generate
 
